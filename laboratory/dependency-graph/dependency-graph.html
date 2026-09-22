@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>video-auto-cut · 模块依赖关系图</title>
+<style>
+  :root{
+    --bg:#ffffff; --bg2:#f6f8fa; --line:#d0d7de; --txt:#1f2328; --dim:#656d76;
+    --entry:#0969da; --core:#8250df; --adapter:#1a7f37; --render:#bf3989; --py:#bc4c00; --ext:#9a6700;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+       font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;font-size:14px;
+       -webkit-font-smoothing:antialiased}
+  header{padding:18px 26px 14px;border-bottom:1px solid var(--line)}
+  h1{margin:0;font-size:19px;letter-spacing:.3px}
+  .sub{color:var(--dim);font-size:12.5px;margin-top:6px;line-height:1.6}
+  .sub code{background:var(--bg2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:12px}
+  .sub b{color:var(--txt)}
+  .stats{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+  .stat{border:1px solid var(--line);border-radius:8px;padding:6px 13px;background:var(--bg2);min-width:90px}
+  .stat b{display:block;font-size:17px;line-height:1.25}
+  .stat span{font-size:11px;color:var(--dim)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:13px;font-size:12px;color:var(--dim);align-items:center}
+  .legend .item{display:inline-flex;align-items:center;gap:6px}
+  .legend .sw{display:inline-block;width:11px;height:11px;border-radius:3px}
+  .wrap{display:flex;height:calc(100vh - 196px);min-height:520px}
+  #graph{flex:1;position:relative;overflow:hidden;
+         background:radial-gradient(circle at 1px 1px,#e9edf1 1px,transparent 0) 0 0/22px 22px}
+  #graph svg{width:100%;height:100%;display:block;cursor:grab}
+  #graph svg.grabbing{cursor:grabbing}
+  .toolbar{position:absolute;right:14px;top:14px;display:flex;gap:8px;z-index:3}
+  .toolbar button{background:#fff;color:var(--txt);border:1px solid var(--line);border-radius:8px;
+                  padding:6px 12px;font-size:12px;cursor:pointer;box-shadow:0 1px 2px rgba(31,35,40,.06)}
+  .toolbar button:hover{background:var(--bg2);border-color:#8c959f}
+  .hint{position:absolute;left:14px;bottom:12px;color:var(--dim);font-size:11.5px;
+        background:rgba(255,255,255,.86);border:1px solid var(--line);padding:4px 9px;border-radius:6px}
+  .node rect{stroke-width:1.5;cursor:pointer;transition:opacity .18s,filter .18s}
+  .node text.lbl{font-size:12.5px;font-weight:600;fill:var(--txt);pointer-events:none}
+  .node text.tag{font-size:9.5px;font-weight:600;fill:var(--dim);pointer-events:none;letter-spacing:.4px}
+  .node:hover rect{filter:drop-shadow(0 3px 8px rgba(31,35,40,.22))}
+  .edge{fill:none;stroke:#b6bec7;stroke-width:1.35;transition:opacity .18s,stroke-width .18s}
+  .edge.spawn{stroke:#cf222e;stroke-dasharray:5 4}
+  .edge.bundle{stroke:#8250df;stroke-dasharray:5 4}
+  .edge.asset{stroke:#0969da;stroke-dasharray:2 3}
+  .edge.ext{stroke:#bf8700;stroke-dasharray:6 4}
+  .edge.hl{stroke-width:2.6;opacity:1 !important}
+  .faded{opacity:.08}
+  aside{width:330px;flex-shrink:0;border-left:1px solid var(--line);background:var(--bg2);
+        padding:18px 18px 26px;overflow:auto}
+  aside h2{margin:0 0 4px;font-size:14px}
+  .role{font-size:12px;color:var(--dim);line-height:1.7;margin-bottom:4px}
+  .path{font-size:11px;color:var(--dim);word-break:break-all;margin-bottom:10px}
+  .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;color:#fff}
+  .grp{margin-top:16px}
+  .grp h3{margin:0 0 7px;font-size:11px;color:var(--dim);font-weight:700;letter-spacing:.6px;text-transform:uppercase}
+  .list{margin:0;padding:0;list-style:none}
+  .list li{display:flex;justify-content:space-between;gap:8px;align-items:center;
+           background:#fff;border:1px solid var(--line);border-radius:7px;padding:6px 9px;margin-bottom:5px;
+           font-size:12px;cursor:pointer;transition:border-color .15s,transform .15s}
+  .list li:hover{border-color:#8c959f;transform:translateX(2px)}
+  .list li b{font-weight:600}
+  .list li em{font-style:normal;color:var(--dim);font-size:10.5px;white-space:nowrap}
+  .empty{color:var(--dim);font-size:12.5px;line-height:1.85;padding:4px 0}
+  .hint2{margin-top:18px;padding-top:14px;border-top:1px dashed var(--line);color:var(--dim);font-size:11.5px;line-height:1.9}
+</style>
+</head>
+<body>
+<header>
+  <h1>video-auto-cut · 模块依赖关系图</h1>
+  <div class="sub">
+    基于 <code>src/</code> 静态分析（import）+ 运行时耦合（子进程、Remotion 渲染、静态资源读取）。
+    连线方向：<b>A → B 表示 A 依赖 B</b>。悬停或点击节点可高亮其完整依赖链。
+  </div>
+  <div class="stats">
+    <div class="stat"><b id="s-nodes">–</b><span>模块节点</span></div>
+    <div class="stat"><b id="s-edges">–</b><span>依赖边</span></div>
+    <div class="stat"><b id="s-internal">–</b><span>内部 import</span></div>
+    <div class="stat"><b id="s-cross">–</b><span>跨进程/跨语言</span></div>
+    <div class="stat"><b id="s-ext">–</b><span>外部依赖组</span></div>
+  </div>
+  <div class="legend" id="legend"></div>
+</header>
+<div class="wrap">
+  <div id="graph">
+    <div class="toolbar">
+      <button id="btn-reset">重置高亮</button>
+      <button id="btn-fit">适应窗口</button>
+    </div>
+    <div class="hint">滚轮缩放 · 拖拽平移 · 悬停/点击查看依赖链</div>
+  </div>
+  <aside id="panel"></aside>
+</div>
+<script>
+/* ---------- 分层定义 ---------- */
+const LAYER = {
+  entry:  {name:"入口层",        color:"#0969da"},
+  core:   {name:"核心编排",      color:"#8250df"},
+  adapter:{name:"外部进程适配",  color:"#1a7f37"},
+  render: {name:"Remotion 渲染", color:"#bf3989"},
+  py:     {name:"Python 脚本",   color:"#bc4c00"},
+  ext:    {name:"外部依赖",      color:"#9a6700"}
+};
+const NW = 176, NW4 = 204, NH = 44;   // 节点宽（默认/第4列）、高
+
+/* ---------- 节点（坐标手工分层排布，左 → 右） ---------- */
+const NODES = [
+  // C1 · 入口层  x=40
+  {id:"server", layer:"entry", x:40, y:165, label:"server.js", tag:"业务机入口", w:NW, file:"src/server.js",
+   role:"Express 业务机：上传/任务的 REST API、静态托管 public/；hybrid 模式下把任务派发给渲染机，渲染机离线则本地兜底执行。"},
+  {id:"worker", layer:"entry", x:40, y:235, label:"worker.mjs", tag:"渲染机入口", w:NW, file:"src/worker.mjs",
+   role:"独立渲染机进程：定期心跳上报 → 轮询抢任务 → 本地全速跑流水线 → 监听 job.json 实时回传进度与产物。"},
+  {id:"demo", layer:"entry", x:40, y:320, label:"demo/make-demo.mjs", tag:"本地脚本", w:NW, file:"src/demo/make-demo.mjs",
+   role:"本地演示脚本，绕过服务端直接调用 ffmpeg / render / faceDetect 产出样片。"},
+
+  // C2 · 核心编排  x=270
+  {id:"pipeline", layer:"core", x:270, y:150, label:"pipeline.js", tag:"编排中枢", w:NW, file:"src/lib/pipeline.js",
+   role:"流水线编排中枢：base 阶段（转码+转写+LLM 计划）与 cut / captions / mg / bgm 分步链全由它驱动，单人 import 了 7 个模块。"},
+  {id:"config", layer:"core", x:270, y:255, label:"config.js", tag:"配置枢纽", w:NW, file:"src/lib/config.js",
+   role:"全局配置与路径派生（root / srcDir / publicDir / pythonDir / remotionDir），被 9 个模块依赖，是图中的最大扇入点。"},
+  {id:"jobs", layer:"core", x:270, y:355, label:"jobs.js", tag:"任务状态", w:NW, file:"src/lib/jobs.js",
+   role:"任务状态读写：jobs/<id>/job.json 的创建、读取与更新，跨进程共享进度的落点。"},
+
+  // C3 · 外部进程适配  x=500
+  {id:"ffmpeg", layer:"adapter", x:500, y:96, label:"ffmpeg.js", tag:"视频处理", w:NW, file:"src/lib/ffmpeg.js",
+   role:"ffmpeg / ffprobe 封装：转码代理、按段裁剪拼接、silencedetect 静音气孔检测、BGM 混音。"},
+  {id:"asr", layer:"adapter", x:500, y:161, label:"asr.js", tag:"语音转写", w:NW, file:"src/lib/asr.js",
+   role:"语音转写适配：spawn Python transcribe.py，拿回词级时间戳供两级切分使用。"},
+  {id:"llm", layer:"adapter", x:500, y:226, label:"llm.js", tag:"大模型决策", w:NW, file:"src/lib/llm.js",
+   role:"调用智谱 glm-5.3-flash 产出剪辑计划（保留段 / 字幕纠错 / MG 规划），带 schema 校验与重试。"},
+  {id:"render", layer:"adapter", x:500, y:291, label:"render.js", tag:"Remotion 渲染", w:NW, file:"src/lib/render.js",
+   role:"Remotion 渲染适配：bundle 入口 index.jsx，渲染字幕与 MG 叠加到成片。"},
+  {id:"faceDetect", layer:"adapter", x:500, y:356, label:"faceDetect.js", tag:"人脸检测", w:NW, file:"src/lib/faceDetect.js",
+   role:"人脸检测适配：spawn Python facedetect.py，用检测结果决定 MG 卡片摆放位置。"},
+
+  // C4 · Remotion 渲染链 + Python  x=760
+  {id:"r-index", layer:"render", x:760, y:62, label:"remotion/index.jsx", tag:"bundle 入口", w:NW4, file:"src/remotion/index.jsx",
+   role:"Remotion 入口：registerRoot 注册根组件，被 render.js 作为 bundle entryPoint。"},
+  {id:"r-root", layer:"render", x:760, y:120, label:"remotion/Root.jsx", tag:"Composition", w:NW4, file:"src/remotion/Root.jsx",
+   role:"声明 Composition：画幅尺寸、时长、fps 等渲染参数。"},
+  {id:"r-head", layer:"render", x:760, y:178, label:"remotion/TalkingHead.jsx", tag:"主合成", w:NW4, file:"src/remotion/TalkingHead.jsx",
+   role:"主合成组件：口播视频 + 字幕层 + MG 叠加层的时序组合。"},
+  {id:"r-mg", layer:"render", x:760, y:236, label:"remotion/mg.jsx", tag:"动画卡片", w:NW4, file:"src/remotion/mg.jsx",
+   role:"MG 动画卡片组件集：comparison / list / emphasis / badge / action 五类。"},
+  {id:"r-fonts", layer:"render", x:760, y:294, label:"remotion/fonts.css", tag:"字体声明", w:NW4, file:"src/remotion/fonts.css",
+   role:"得意黑 smiley-sans 字体声明——全仓唯一被引用的字体副本。"},
+  {id:"py-trans", layer:"py", x:760, y:384, label:"python/transcribe.py", tag:"whisper 转写", w:NW4, file:"src/python/transcribe.py",
+   role:"faster-whisper 词级转写脚本，由 asr.js 以子进程方式调用。"},
+  {id:"py-face", layer:"py", x:760, y:442, label:"python/facedetect.py", tag:"OpenCV 检测", w:NW4, file:"src/python/facedetect.py",
+   role:"OpenCV Haar 人脸检测脚本，由 faceDetect.js 以子进程方式调用。"},
+
+  // C4 · 配置 / 资源（被右侧读取）  x=800
+  {id:"public", layer:"ext", x:800, y:495, label:"public/ 静态资源", tag:"前端页 + BGM 曲库", w:NW, file:"src/public/",
+   role:"前端静态页（index.html 工作台 / cut.html 口播剪辑）与 BGM 曲库：server 静态托管，pipeline 读取 bgm-library/index.json。"},
+
+  // C5 · 外部依赖（按语义分组）  x=1320
+  {id:"extWeb", layer:"ext", x:1040, y:150, label:"Web 服务栈", tag:"express · multer", w:NW, file:"package.json",
+   role:"express（HTTP 服务）、multer（多部分上传）、dotenv（环境变量）。注意：dotenv 已在 package.json 声明，但 src/ 内暂无直接 import。"},
+  {id:"extRemotion", layer:"ext", x:1040, y:260, label:"Remotion 渲染栈", tag:"@remotion · react", w:NW, file:"package.json",
+   role:"@remotion/bundler + @remotion/renderer（打包与渲染）、remotion + react + react-dom（组件运行时）。"},
+  {id:"extText", layer:"ext", x:1040, y:370, label:"中文文本处理", tag:"pinyin · opencc", w:NW, file:"package.json",
+   role:"pinyin-pro（热词同音拼音纠错）、opencc-js（繁简转换）。"}
+];
+/* ---------- 边（A → B 表示 A 依赖 B） ---------- */
+const EDGES = [
+  // 入口 → 编排 / 配置
+  {s:"server", t:"pipeline",   k:"import"},
+  {s:"server", t:"jobs",       k:"import"},
+  {s:"server", t:"config",     k:"import"},
+  {s:"worker", t:"pipeline",   k:"import"},
+  {s:"worker", t:"jobs",       k:"import"},
+  {s:"worker", t:"config",     k:"import"},
+  {s:"demo",   t:"config",     k:"import"},
+  {s:"demo",   t:"ffmpeg",     k:"import"},
+  {s:"demo",   t:"render",     k:"import"},
+  {s:"demo",   t:"faceDetect", k:"import"},
+  // 编排内部 / 编排 → 适配
+  {s:"pipeline", t:"jobs",       k:"import"},
+  {s:"pipeline", t:"config",     k:"import"},
+  {s:"pipeline", t:"ffmpeg",     k:"import"},
+  {s:"pipeline", t:"asr",        k:"import"},
+  {s:"pipeline", t:"llm",        k:"import"},
+  {s:"pipeline", t:"render",     k:"import"},
+  {s:"pipeline", t:"faceDetect", k:"import"},
+  // 适配 / 编排 → 配置（config 为最大扇入点）
+  {s:"jobs",       t:"config", k:"import"},
+  {s:"ffmpeg",     t:"config", k:"import"},
+  {s:"asr",        t:"config", k:"import"},
+  {s:"llm",        t:"config", k:"import"},
+  {s:"render",     t:"config", k:"import"},
+  {s:"faceDetect", t:"config", k:"import"},
+  // 跨进程 / 跨语言 / 静态资源
+  {s:"render",     t:"r-index",  k:"bundle"},
+  {s:"asr",        t:"py-trans", k:"spawn"},
+  {s:"faceDetect", t:"py-face",  k:"spawn"},
+  {s:"server",     t:"public",   k:"asset"},
+  {s:"pipeline",   t:"public",   k:"asset"},
+  // Remotion 内部链
+  {s:"r-index", t:"r-root",  k:"import"},
+  {s:"r-root",  t:"r-head",  k:"import"},
+  {s:"r-head",  t:"r-mg",    k:"import"},
+  {s:"r-head",  t:"r-fonts", k:"import"},
+  {s:"r-mg",    t:"r-fonts", k:"import"},
+  // 外部 npm 依赖
+  {s:"server",   t:"extWeb",      k:"ext"},
+  {s:"render",   t:"extRemotion", k:"ext"},
+  {s:"r-index",  t:"extRemotion", k:"ext"},
+  {s:"r-root",   t:"extRemotion", k:"ext"},
+  {s:"r-head",   t:"extRemotion", k:"ext"},
+  {s:"r-mg",     t:"extRemotion", k:"ext"},
+  {s:"pipeline", t:"extText",     k:"ext"}
+];
+
+const EDGE_KIND = {
+  import:{name:"内部 import",   hint:"静态 import 语句"},
+  spawn: {name:"子进程调用",    hint:"spawn Python 脚本"},
+  bundle:{name:"Remotion 渲染", hint:"bundle / 渲染入口"},
+  asset: {name:"静态资源读取",   hint:"public/ 文件或 BGM 曲库"},
+  ext:   {name:"外部 npm 依赖", hint:"package.json 依赖"}
+};
+/* ================== 渲染 ================== */
+const NS = "http://www.w3.org/2000/svg";
+const byId = Object.fromEntries(NODES.map(n => [n.id, n]));
+const nodeW = n => n.w || NW;
+const mk = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e; };
+const hexA = (h, a) => { const v = parseInt(h.slice(1), 16); return `rgba(${v>>16&255},${v>>8&255},${v&255},${a})`; };
+
+/* 列布局：按架构层从左到右重新排布（覆盖节点自带坐标） */
+const COLS = [
+  {x:36,   y0:165, gap:70,  title:"① 入口层",          ids:["server","worker","demo"]},
+  {x:272,  y0:150, gap:140, title:"② 核心编排",        ids:["pipeline","jobs"]},
+  {x:508,  y0:96,  gap:65,  title:"③ 外部进程适配",    ids:["ffmpeg","asr","llm","render","faceDetect"]},
+  {x:772,  y0:225, gap:90,  title:"④ 配置 / 资源",     ids:["config","py-trans","py-face","public"]},
+  {x:1040, y0:60,  gap:72,  title:"⑤ Remotion 渲染链", ids:["r-index","r-root","r-head","r-mg","r-fonts"]},
+  {x:1320, y0:150, gap:115, title:"⑥ 外部依赖",        ids:["extWeb","extRemotion","extText"]}
+];
+COLS.forEach(c => c.ids.forEach((id, i) => { byId[id].x = c.x; byId[id].y = c.y0 + i * c.gap; }));
+
+const VW = 1530, VH = 580;
+const KIND_COLOR = {import:"#a9b1ba", spawn:"#cf222e", bundle:"#8250df", asset:"#0969da", ext:"#bf8700"};
+
+const graphEl = document.getElementById("graph");
+const svg = mk("svg", {viewBox:`0 0 ${VW} ${VH}`, preserveAspectRatio:"xMidYMid meet"});
+graphEl.insertBefore(svg, graphEl.firstChild);
+
+/* 箭头 marker（按边类型着色） */
+const defs = mk("defs", {});
+for (const [k, c] of Object.entries(KIND_COLOR)) {
+  const m = mk("marker", {id:"arw-"+k, viewBox:"0 0 10 10", refX:"9", refY:"5",
+    markerWidth:"6", markerHeight:"6", orient:"auto-start-reverse"});
+  m.appendChild(mk("path", {d:"M0,0 L10,5 L0,10 z", fill:c}));
+  defs.appendChild(m);
+}
+svg.appendChild(defs);
+
+/* 层背景块 + 列标题 */
+COLS.forEach(c => {
+  const ns = c.ids.map(id => byId[id]);
+  const top = Math.min(...ns.map(n => n.y)) - 24;
+  const bot = Math.max(...ns.map(n => n.y + NH)) + 24;
+  const wide = Math.max(...ns.map(nodeW));
+  const g = mk("g", {});
+  g.appendChild(mk("rect", {x:c.x-18, y:top, width:wide+36, height:bot-top, rx:"14",
+    fill:"#f6f8fa", stroke:"#e5e9ed"}));
+  const t = mk("text", {x:c.x-4, y:top-10, "font-size":"11", "font-weight":"700",
+    fill:"#8b949e", "letter-spacing":".8"});
+  t.textContent = c.title;
+  g.appendChild(t);
+  svg.appendChild(g);
+});
+
+/* 连线路径：跨列走水平贝塞尔；同列走垂直直线，跨节点则左侧绕行 */
+function edgePath(a, b) {
+  if (Math.abs(a.x - b.x) < 2) {
+    const between = NODES.some(n => n.id !== a.id && n.id !== b.id && Math.abs(n.x - a.x) < 2
+      && n.y > Math.min(a.y, b.y) && n.y < Math.max(a.y, b.y));
+    const cx = a.x + nodeW(a) / 2;
+    if (!between) return `M${cx} ${a.y + NH} L${cx} ${b.y}`;
+    const y1 = a.y + NH / 2, y2 = b.y + NH / 2, dx = 64;
+    return `M${a.x} ${y1} C${a.x-dx} ${y1} ${a.x-dx} ${y2} ${a.x} ${y2}`;
+  }
+  const x1 = a.x + nodeW(a), y1 = a.y + NH / 2, x2 = b.x, y2 = b.y + NH / 2;
+  const dx = Math.max(38, Math.abs(x2 - x1) * 0.42);
+  return `M${x1} ${y1} C${x1+dx} ${y1} ${x2-dx} ${y2} ${x2} ${y2}`;
+}
+
+const edgeEls = EDGES.map(e => {
+  const p = mk("path", {class:"edge " + e.k, d:edgePath(byId[e.s], byId[e.t]),
+    "marker-end":`url(#arw-${e.k})`});
+  svg.appendChild(p);
+  return p;
+});
+
+/* 节点 */
+const nodeEls = {};
+NODES.forEach(n => {
+  const col = LAYER[n.layer].color;
+  const g = mk("g", {class:"node"});
+  g.appendChild(mk("rect", {x:n.x, y:n.y, width:nodeW(n), height:NH, rx:"9",
+    fill:hexA(col, .08), stroke:col}));
+  const t1 = mk("text", {class:"lbl", x:n.x + 13, y:n.y + 19}); t1.textContent = n.label;
+  const t2 = mk("text", {class:"tag", x:n.x + 13, y:n.y + 34}); t2.textContent = n.tag;
+  g.append(t1, t2);
+  g.addEventListener("mouseenter", () => focus(n.id));
+  g.addEventListener("mouseleave", () => focus(pinned));
+  g.addEventListener("click", ev => {
+    ev.stopPropagation();
+    pinned = pinned === n.id ? null : n.id;
+    focus(pinned);
+  });
+  nodeEls[n.id] = g;
+  svg.appendChild(g);
+});
+
+/* ================== 高亮与详情面板 ================== */
+const panelEl = document.getElementById("panel");
+let pinned = null;
+
+function closure(start, dir) {
+  const seen = new Set([start]), stack = [start];
+  while (stack.length) {
+    const cur = stack.pop();
+    for (const e of EDGES) {
+      const nxt = dir === "down" ? (e.s === cur ? e.t : null) : (e.t === cur ? e.s : null);
+      if (nxt && !seen.has(nxt)) { seen.add(nxt); stack.push(nxt); }
+    }
+  }
+  return seen;
+}
+
+function focus(id) {
+  let nodes = null, edges = null;
+  if (id) {
+    nodes = new Set([...closure(id, "down"), ...closure(id, "up")]);
+    edges = new Set();
+    EDGES.forEach((e, i) => { if (nodes.has(e.s) && nodes.has(e.t)) edges.add(i); });
+  }
+  edgeEls.forEach((el, i) => {
+    el.classList.toggle("hl", !!id && edges.has(i));
+    el.classList.toggle("faded", !!id && !edges.has(i));
+  });
+  NODES.forEach(n => nodeEls[n.id].classList.toggle("faded", !!id && !nodes.has(n.id)));
+  drawPanel(id);
+}
+
+function drawPanel(id) {
+  if (!id) {
+    const hot = [["config","扇入最大 · 被 10 个模块依赖"],
+                 ["pipeline","编排中枢 · 出边最多"],
+                 ["render","跨进程边界 · Remotion 渲染"],
+                 ["server","业务机入口 · 兼静态托管"]];
+    panelEl.innerHTML =
+      `<h2>依赖关系总览</h2>
+       <div class="role">共 <b>${NODES.length}</b> 个模块节点、<b>${EDGES.length}</b> 条依赖边，按架构层从左到右排布。</div>
+       <div class="grp"><h3>关键枢纽</h3><ul class="list">${hot.map(([k, d]) =>
+         `<li data-go="${k}"><b>${byId[k].label}</b><em>${d}</em></li>`).join("")}</ul></div>
+       <div class="hint2">
+         <b>怎么看</b><br>
+         · 悬停 / 点击节点 → 高亮其完整上下游链路<br>
+         · 滚轮缩放 · 拖拽平移 ·「适应窗口」复位<br>
+         · 连线方向：A → B 表示 A 依赖 B
+       </div>`;
+    bindGo();
+    return;
+  }
+  const n = byId[id];
+  const outs = EDGES.filter(e => e.s === id).map(e => byId[e.t]);
+  const ins  = EDGES.filter(e => e.t === id).map(e => byId[e.s]);
+  const ul = arr => arr.length
+    ? `<ul class="list">${arr.map(m =>
+        `<li data-go="${m.id}"><b>${m.label}</b><em>${LAYER[m.layer].name}</em></li>`).join("")}</ul>`
+    : `<div class="empty">无</div>`;
+  panelEl.innerHTML =
+    `<h2>${n.label}</h2>
+     <div class="path">${n.file}</div>
+     <span class="badge" style="background:${LAYER[n.layer].color}">${LAYER[n.layer].name}</span>
+     <div class="role" style="margin-top:10px">${n.role}</div>
+     <div class="grp"><h3>依赖 (→) ${outs.length}</h3>${ul(outs)}</div>
+     <div class="grp"><h3>被依赖 (←) ${ins.length}</h3>${ul(ins)}</div>`;
+  bindGo();
+}
+
+function bindGo() {
+  panelEl.querySelectorAll("[data-go]").forEach(el =>
+    el.addEventListener("click", () => { pinned = el.dataset.go; focus(pinned); }));
+}
+
+/* ================== 统计 / 图例 ================== */
+document.getElementById("s-nodes").textContent    = NODES.length;
+document.getElementById("s-edges").textContent    = EDGES.length;
+document.getElementById("s-internal").textContent = EDGES.filter(e => e.k === "import").length;
+document.getElementById("s-cross").textContent    = EDGES.filter(e => e.k !== "import" && e.k !== "ext").length;
+document.getElementById("s-ext").textContent      = EDGES.filter(e => e.k === "ext").length;
+
+document.getElementById("legend").innerHTML =
+  Object.values(LAYER).map(l =>
+    `<span class="item"><i class="sw" style="background:${l.color}"></i>${l.name}</span>`).join("")
+  + `<span class="item" style="color:#d0d7de">|</span>`
+  + Object.entries(EDGE_KIND).map(([k, v]) =>
+    `<span class="item" title="${v.hint}"><i style="display:inline-block;width:22px;height:0;flex:none;border-top:2px ${k === "import" ? "solid" : "dashed"} ${KIND_COLOR[k]}"></i>${v.name}</span>`).join("");
+
+/* ================== 缩放 / 平移 / 按钮 ================== */
+let vb = {x:0, y:0, w:VW, h:VH};
+const applyVB = () => svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+
+graphEl.addEventListener("wheel", ev => {
+  ev.preventDefault();
+  const s = ev.deltaY > 0 ? 1.12 : 0.89;
+  const w = Math.min(VW * 2.5, Math.max(VW * 0.4, vb.w * s));
+  const h = w * VH / VW;
+  const r = svg.getBoundingClientRect();
+  const mx = (ev.clientX - r.left) / r.width, my = (ev.clientY - r.top) / r.height;
+  vb.x += (vb.w - w) * mx;
+  vb.y += (vb.h - h) * my;
+  vb.w = w; vb.h = h;
+  applyVB();
+}, {passive:false});
+
+let drag = null;
+svg.addEventListener("mousedown", ev => {
+  drag = {x:ev.clientX, y:ev.clientY, vx:vb.x, vy:vb.y};
+  svg.classList.add("grabbing");
+});
+window.addEventListener("mousemove", ev => {
+  if (!drag) return;
+  const r = svg.getBoundingClientRect();
+  vb.x = drag.vx - (ev.clientX - drag.x) / r.width * vb.w;
+  vb.y = drag.vy - (ev.clientY - drag.y) / r.height * vb.h;
+  applyVB();
+});
+window.addEventListener("mouseup", () => { drag = null; svg.classList.remove("grabbing"); });
+
+svg.addEventListener("click", ev => {
+  if (ev.target.tagName === "svg" || (ev.target.getAttribute && ev.target.getAttribute("class") === "edge")) {
+    pinned = null; focus(null);
+  }
+});
+
+document.getElementById("btn-reset").addEventListener("click", () => { pinned = null; focus(null); });
+document.getElementById("btn-fit").addEventListener("click", () => { vb = {x:0, y:0, w:VW, h:VH}; applyVB(); });
+
+focus(null);
+</script>
+</body>
+</html>
